@@ -292,11 +292,13 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     elif q.data == "huongdan":
         await q.message.reply_text(
             "📱 *Hướng dẫn cài DNS iOS giữ Gold*\n\n"
-            "1️⃣ Tải file `LocketGold_GiuGold_2027.mobileconfig`\n"
-            "2️⃣ Mở file bằng Safari → *Cho phép*\n"
-            "3️⃣ Vào *Cài đặt* → *Đã tải về hồ sơ* → *Cài đặt*\n"
-            "4️⃣ *Cài đặt* → *Cài đặt chung* → *Giới thiệu* → *Cài đặt tin cậy chứng chỉ* → Bật CA\n"
+            "1️⃣ Nhấn vào file `Vandunggold.mobileconfig` vừa nhận\n"
+            "2️⃣ Mở file bằng *Safari* → nhấn *Cho phép*\n"
+            "3️⃣ Vào *Cài đặt* → nhấn *Đã tải về hồ sơ* → nhấn *Cài đặt*\n"
+            "4️⃣ Vào *Cài đặt* → *Cài đặt chung* → *Giới thiệu* → *Cài đặt tin cậy chứng chỉ*\n"
+            "   → Bật công tắc *LocketGold CA* ← ⚠️ Bước này bắt buộc!\n"
             "5️⃣ Mở Locket → Gold active ✅\n\n"
+            "❗ Nếu không bật chứng chỉ tin cậy thì Gold sẽ mất!\n\n"
             f"Hỗ trợ: Zalo `{ZALO}`",
             parse_mode="Markdown"
         )
@@ -317,10 +319,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parts = q.data.split("_", 2)
         uid = parts[1]
         username = parts[2] if len(parts) > 2 else "unknown"
-        try:
-            await q.message.delete()
-        except Exception:
-            await q.message.edit_reply_markup(reply_markup=None)
+        await q.message.edit_reply_markup(reply_markup=None)
         msg = await q.message.reply_text("🔄 Đang kích hoạt Gold...", parse_mode="Markdown")
         # Kiểm tra giới hạn lần nữa trước khi kick
         user_id = q.from_user.id
@@ -337,37 +336,21 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         _u = username
         _id = uid
 
-        # Bước 1
-        s1 = (
-            "⚡ SYSTEM EXPLOIT RUNNING...\n\n"
-            f"[Worker #1] Processing Request...\n"
-            f"[*] Target Identified: {_id}"
-        )
+        s1 = "[1/3] RESOLVE UID\n  \u251c\u2500 Target: " + _u + "\n  \u2514\u2500 Connecting..."
         await msg.edit_text("```\n" + s1 + "\n```", parse_mode="Markdown")
-        await _asyncio.sleep(0.9)
+        await _asyncio.sleep(0.8)
 
-        # Bước 2
-        s2 = (
-            "⚡ SYSTEM EXPLOIT RUNNING...\n\n"
-            f"[Worker #1] Processing Request...\n"
-            f"[*] Target Identified: {_id}\n"
-            f"[*] Loading Exploit Payload (RevenueCat)...\n"
-            f"[*] Using Token Set: Custom"
-        )
+        s2 = ("[1/3] RESOLVE UID\n  \u2514\u2500 [SUCCESS] UID: " + _id +
+              "\n\n[2/3] VERIFY\n  \u251c\u2500 Checking target status...\n  \u2514\u2500 [FOUND] UID da phan giai.")
         await msg.edit_text("```\n" + s2 + "\n```", parse_mode="Markdown")
-        await _asyncio.sleep(0.9)
+        await _asyncio.sleep(0.8)
 
-        # Bước 3
-        s3 = (
-            "⚡ SYSTEM EXPLOIT RUNNING...\n\n"
-            f"[Worker #1] Processing Request...\n"
-            f"[*] Target Identified: {_id}\n"
-            f"[*] Loading Exploit Payload (RevenueCat)...\n"
-            f"[*] Using Token Set: Custom\n"
-            f"[>] Attempt 1/5: Sending Receipt...\n"
-            f"[>] Attempt 2/5: Sending Receipt...\n"
-            f"[>] Attempt 3/5: Sending Receipt..."
-        )
+        s3 = ("[1/3] RESOLVE UID\n  \u2514\u2500 [SUCCESS] UID: " + _id +
+              "\n\n[2/3] VERIFY\n  \u2514\u2500 [FOUND] OK." +
+              "\n\n[3/3] PROCESS\n  \u251c\u2500 Loading Exploit Payload...\n  \u251c\u2500 Using Token Set: Custom" +
+              "\n  \u251c\u2500 [>] Attempt 1/5: Sending Receipt..." +
+              "\n  \u251c\u2500 [>] Attempt 2/5: Sending Receipt..." +
+              "\n  \u2514\u2500 Please wait...")
         await msg.edit_text("```\n" + s3 + "\n```", parse_mode="Markdown")
         await _asyncio.sleep(1.2)
 
@@ -376,14 +359,13 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             add_usage(user_id)
             await msg.edit_text(
                 f"✅ *KÍCH HOẠT THÀNH CÔNG*\n\n"
-                f"🔑: `@{username}`\n"
-                f"🪪: `{uid}`\n"
-                f"📅 Plan: Gold (30d)\n\n"
-                f"🛡 *HƯỚNG DẪN QUAN TRỌNG*:\n"
-                f"1️⃣ Vào App Locket kiểm tra đã có *Gold* chưa.\n"
-                f"2️⃣ Cài DNS để không bị mất Gold:\n\n"
-                f"🍎 *iOS*: Mở file `.mobileconfig` bên dưới bằng Safari → Cho phép → Cài đặt Profile\n\n"
-                f"🤖 *Android*: `782aa4.dns.nextdns.io`\n"
+                f"👤 `@{username}`\n"
+                f"🏅 Plan: Gold (Hết hạn 14/08/2027)\n\n"
+                f"⚠️ *HƯỚNG DẪN QUAN TRỌNG:*\n"
+                f"❗ Vào App Locket kiểm tra đã có Gold chưa.\n"
+                f"❗ Cài DNS để không bị mất Gold:\n\n"
+                f"🍎 *iOS:* Mở file bên dưới bằng Safari → Cho phép → Cài đặt\n  ⚠️ Sau đó vào Cài đặt → Cài đặt chung → Giới thiệu → Cài đặt tin cậy chứng chỉ → Bật LocketGold CA\n\n"
+                f"🤖 *Android:* `782aa4.dns.nextdns.io`\n"
                 f"(Cài đặt → Mạng → Private DNS)\n\n"
                 f"💡 Lưu ý: Bắt buộc cài DNS để không bị mất Gold!\n\n"
                 f"Tham gia nhóm chat: https://t.me/gocnholocket",
@@ -394,7 +376,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                     await q.message.reply_document(
                         document=f,
                         filename="Vandunggold.mobileconfig",
-                        caption="🍎 File DNS cho iOS\nBấm vào file → Mở bằng Safari → Cho phép → Cài đặt Profile"
+                        caption="🍎 File DNS cho iOS\n1. Mở bằng Safari → Cho phép → Cài đặt\n2. Cài đặt → Cài đặt chung → Giới thiệu → Cài đặt tin cậy chứng chỉ → Bật LocketGold CA\n⚠️ Bắt buộc bật chứng chỉ tin cậy để giữ Gold!"
                     )
             except FileNotFoundError:
                 pass
