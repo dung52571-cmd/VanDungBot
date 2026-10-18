@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadDisplayName</key>
+  <string>Locket Gold - Giữ Gold đến 14/08/2027</string>
+  <key>PayloadDescription</key>
+  <string>DNS giữ Gold sau khi kick bằng tool mới</string>
+  <key>PayloadIdentifier</key>
+  <string>net.locketgold.new.config</string>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>D4E5F6A7-B8C9-0123-DEFA-456789012345</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+  <key>PayloadRemovalDisallowed</key>
+  <true/>
+  <key>PayloadContent</key>
+  <array>
+
+    <dict>
+      <key>PayloadType</key>
+      <string>com.apple.security.root</string>
+      <key>PayloadIdentifier</key>
+      <string>net.locketgold.new.ca</string>
+      <key>PayloadUUID</key>
+      <string>E5F6A7B8-C9D0-1234-EFAB-567890123456</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>PayloadDisplayName</key>
+      <string>LocketGold CA</string>
+      <key>PayloadCertificateFileName</key>
+      <string>LGCa.der</string>
+      <key>PayloadContent</key>
+      <data>
+MIIDSDCCAjCgAwIBAgIUaumFnIZO9wdw/U1hrMDZmAtSRcIwDQYJKoZIhvcNAQELBQAw
+PDELMAkGA1UEBhMCVk4xFTATBgNVBAoMDE15IExvY2FsIExhYjEWMBQGA1UEAwwNTXkg
+UHJpdmF0ZSBDQTAeFw0yNjEwMDEwNTM4MzJaFw0zNjA5MjgwNTM4MzJaMDwxCzAJBgNV
+BAYTAlZOMRUwEwYDVQQKDAxNeSBMb2NhbCBMYWIxFjAUBgNVBAMMDU15IFByaXZhdGUg
+Q0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDFqRpZlXZxmi1AojTSl3UU
+9/aPtv/Pgb4F1XeheC2PPXyvEJZmbYzcWPG9J5lHmeDgljTVZjKzBRgokhUntTHnFm+5
+TpkKaA//CmohUOxyqQFvwP96P85a7FswquydTq0vBY1rDkxX49FK9sWT/TEEyVFTCprn
+Vui/CVS3oJWkMd0Tp6cqAgprmVoBG6u89UE1I/82u9UelYeQViN33LMGQ50o8qs/dAh8
+0LWca28bNgBoHe1c0TBNPMKEZlv/Fo7P9Vc9mcYWeX2xrvM0eGzQlJZTTZBg9P7TA9ln
+8zLK38dKb+WxggM+2tzORG6ZuXpEehVyANIQivkcDlSEOkqnAgMBAAGjQjBAMA8GA1Ud
+EwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSYPrTCyrwyLZ0OCMvE
+2YNEuev8DTANBgkqhkiG9w0BAQsFAAOCAQEAAdifQ6Nmx5IdG0XkCLRwTJYkNbrERnPa
+Nh991QuKkD5PkTv5U9lnR5U10LFn2bleiGJ4QTkl6MKIKn7RIDUsyulba3InbAqZxsLy
+d+WqBgwOYaDwjb9msWuXdpwMWChf/0Oa/sU1XSBAFsNXOqXYVmiQf0Z/iTjBCmfaVRdx
+ObdBE3/G7rLOgRG3AngfC8PYJ7aifFsJPB65aBqC0qtcR5kL8KUx0WGkPYrpvgR+ce4h
+6mNtrR4fnjOp+FfJ6AI3VvhfDYeGBUuVP7M9OKIiQHDsb0VdmdzZnnvfaJD/jdgTx3Yn
+223nbmusW1VfhhGmBbmUY1ELti6rdhWPBhrVKg==
+      </data>
+    </dict>
+
+    <dict>
+      <key>PayloadType</key>
+      <string>com.apple.dnsSettings.managed</string>
+      <key>PayloadIdentifier</key>
+      <string>net.locketgold.new.dns</string>
+      <key>PayloadUUID</key>
+      <string>F6A7B8C9-D0E1-2345-FABC-678901234567</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>PayloadDisplayName</key>
+      <string>Locket Gold DNS</string>
+      <key>DNSSettings</key>
+      <dict>
+        <key>DNSProtocol</key>
+        <string>HTTPS</string>
+        <key>ServerURL</key>
+        <string>https://freelocket.lunakey.net/dns-query</string>
+        <key>SupplementalMatchDomains</key>
+        <array>
+          <string>api.revenuecat.com</string>
+          <string>.revenuecat.com</string>
+          <string>*.revenuecat.com</string>
+          <string>firebaseremoteconfig.googleapis.com</string>
+          <string>.firebaseremoteconfig.googleapis.com</string>
+          <string>*.firebaseremoteconfig.googleapis.com</string>
+          <string>firebaseremoteconfigrealtime.googleapis.com</string>
+          <string>.firebaseremoteconfigrealtime.googleapis.com</string>
+          <string>*.firebaseremoteconfigrealtime.googleapis.com</string>
+          <string>firebaselogging.googleapis.com</string>
+          <string>.firebaselogging.googleapis.com</string>
+          <string>*.firebaselogging.googleapis.com</string>
+        </array>
+      </dict>
+    </dict>
+
+  </array>
+</dict>
+</plist>
