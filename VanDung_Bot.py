@@ -15,7 +15,7 @@ from telegram.ext import (Application, CommandHandler, MessageHandler,
 # ──────────────────────────────────────────
 
 BOT_TOKEN  = "8868803975:AAG5oLI2ow5xjr4JnkdE41NLof_CBChsVYk"   # lấy từ @BotFather
-ADMIN_IDS  = [8374619289]                      # Telegram ID của DJ (admin)
+ADMIN_IDS  = [8374619289, 7662760183]                      # Telegram ID của DJ (admin)
 ZALO       = "0364594036"
 SHOP_NAME  = "VĂN DŨNG GOLD"
 
