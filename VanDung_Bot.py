@@ -5,7 +5,7 @@ Tự động kick Gold cho khách khi nhắn username
 """
 
 import asyncio, aiohttp, json, re, os, time
-from datetime import datetime
+from datetime import datetime, timezone
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import (Application, CommandHandler, MessageHandler,
                            CallbackQueryHandler, filters, ContextTypes)
@@ -35,15 +35,34 @@ TOKEN_CONFIG = {
 DAILY_LIMIT = 5
 usage_data: dict = {}
 
-# ── /start gate ─────────────────────────────────
-# Lưu user_id đã gõ /start
-started_users: set = set()
+# ── /start gate (Lưu file để không mất khi restart) ──
+STARTED_FILE = "started_users.json"
+
+def load_started_users() -> set:
+    if os.path.exists(STARTED_FILE):
+        try:
+            with open(STARTED_FILE, "r", encoding="utf-8") as f:
+                return set(json.load(f))
+        except Exception:
+            pass
+    return set()
+
+def save_started_users(users: set):
+    try:
+        with open(STARTED_FILE, "w", encoding="utf-8") as f:
+            json.dump(list(users), f)
+    except Exception:
+        pass
+
+started_users: set = load_started_users()
 
 def is_started(user_id: int) -> bool:
-    return user_id in ADMIN_IDS or user_id in started_users
+    # Bắt buộc TẤT CẢ mọi người (kể cả Admin) phải gõ /start mới dùng được bot
+    return user_id in started_users
 
 NOT_STARTED_MSG = (
-    "⚠️ Vui lòng gõ lệnh /start trước khi sử dụng bot!"
+    "⚠️ Bạn chưa khởi động bot!\n"
+    "Vui lòng gõ lệnh /start trước khi sử dụng bot."
 )
 
 def check_limit(user_id: int) -> tuple:
@@ -125,7 +144,7 @@ async def resolve_uid(username: str) -> str | None:
                 dm = re.search(r'/invites/([A-Za-z0-9]{28})', d)
                 if dm:
                     return dm.group(1)
-            except:
+            except Exception:
                 pass
         return None
 
@@ -141,10 +160,6 @@ async def resolve_uid(username: str) -> str | None:
 
 
 async def check_gold_status(uid: str) -> tuple[bool, str | None]:
-    """
-    GET /v1/subscribers/{uid} — trả về (has_gold, expires_date_str | None)
-    has_gold = True nếu có entitlement active hoặc subscription chưa hết hạn
-    """
     url = f"https://api.revenuecat.com/v1/subscribers/{uid}"
     hdrs = {k: v for k, v in HEADERS.items()
             if k not in ('Content-Type', 'Content-Length', 'X-Post-Params-Hash', 'X-Headers-Hash')}
@@ -161,22 +176,18 @@ async def check_gold_status(uid: str) -> tuple[bool, str | None]:
         subscriber = data.get("subscriber", {})
         now_ts = time.time()
 
-        # Kiểm tra entitlements trước (cách nhanh nhất)
         entitlements = subscriber.get("entitlements", {})
         for ent_name, ent_data in entitlements.items():
             expires_raw = ent_data.get("expires_date")
             if expires_raw is None:
-                # lifetime entitlement
                 return True, "Vĩnh viễn"
             try:
-                from datetime import timezone
                 expires_dt = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
                 if expires_dt.timestamp() > now_ts:
                     return True, expires_dt.strftime("%d/%m/%Y")
             except Exception:
                 pass
 
-        # Kiểm tra subscriptions
         subscriptions = subscriber.get("subscriptions", {})
         for sub_id, sub_data in subscriptions.items():
             if not sub_data.get("is_sandbox", False):
@@ -242,7 +253,8 @@ async def inject_gold(uid: str) -> tuple[bool, str]:
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    started_users.add(user_id)          # đánh dấu đã /start
+    started_users.add(user_id)
+    save_started_users(started_users)
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🏅 Nhập User Locket", callback_data="nhap_user")],
         [
@@ -261,7 +273,11 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_kick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Lệnh admin: /kick <username>"""
-    if update.effective_user.id not in ADMIN_IDS:
+    user_id = update.effective_user.id
+    if not is_started(user_id):
+        await update.message.reply_text(NOT_STARTED_MSG)
+        return
+    if user_id not in ADMIN_IDS:
         return
     if not ctx.args:
         await update.message.reply_text("Dùng: /kick <username>")
@@ -279,12 +295,24 @@ async def cmd_kick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def handle_unknown_command(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Chặn mọi lệnh khác nếu chưa /start"""
+    user_id = update.effective_user.id
+    if not is_started(user_id):
+        await update.message.reply_text(NOT_STARTED_MSG)
+        return
+    await update.message.reply_text("❓ Lệnh không hợp lệ. Vui lòng dùng menu của bot.")
+
+
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     # ── GATE: phải /start trước ──────────────────
     if not is_started(user_id):
         await update.message.reply_text(NOT_STARTED_MSG)
+        return
+
+    if not update.message or not update.message.text:
         return
 
     text = update.message.text.strip()
@@ -307,11 +335,9 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-        # Kiểm tra trạng thái Gold hiện tại
         await msg.edit_text("🔍 Đang kiểm tra trạng thái Gold...", parse_mode="Markdown")
         has_gold, expires_str = await check_gold_status(uid)
 
-        # Kiểm tra giới hạn
         allowed, remaining = check_limit(user_id)
         today = datetime.now().strftime("%Y-%m-%d")
         used = 0
@@ -322,7 +348,6 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         ctx.user_data["pending_username"] = username
 
         if has_gold:
-            # Đã có Gold — chỉ thông báo, không cho kick nữa
             await msg.edit_text(
                 f"✅ *Tài khoản đã có Gold!*\n\n"
                 f"🪪 `{uid}`\n"
@@ -335,7 +360,6 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-        # Chưa có Gold — hiện nút kích hoạt
         if not allowed:
             await msg.edit_text(
                 f"⛔ *Đã hết lượt hôm nay!*\n\n"
@@ -435,7 +459,6 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await q.message.edit_reply_markup(reply_markup=None)
         msg = await q.message.reply_text("🔄 Đang kích hoạt Gold...", parse_mode="Markdown")
 
-        # Kiểm tra giới hạn lần nữa trước khi kick
         allowed, remaining = check_limit(user_id)
         if not allowed and user_id not in ADMIN_IDS:
             await msg.edit_text(
@@ -444,7 +467,6 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-        # Kiểm tra lại Gold status ngay trước khi inject (phòng race)
         has_gold, expires_str = await check_gold_status(uid)
         if has_gold:
             await msg.edit_text(
@@ -534,8 +556,8 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("kick", cmd_kick))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.REPLY & filters.TEXT, handle_message))
+    app.add_handler(MessageHandler(filters.COMMAND, handle_unknown_command))
+    app.add_handler(MessageHandler(~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(handle_callback))
     print(f"[*] Bot đang chạy. Nhấn Ctrl+C để dừng.")
     app.run_polling(drop_pending_updates=True)
