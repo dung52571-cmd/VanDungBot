@@ -250,6 +250,7 @@ async def inject_gold(uid: str) -> tuple[bool, str]:
 # ──────────────────────────────────────────
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    ctx.user_data["activated"] = True          # đánh dấu đã dùng /start
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🏅 Nhập User Locket", callback_data="nhap_user")],
         [
@@ -285,6 +286,10 @@ async def cmd_kick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
 
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    # Chưa dùng /start → im lặng, không trả lời
+    if not ctx.user_data.get("activated"):
+        return
+
     text = update.message.text.strip()
 
     if ctx.user_data.get("waiting_username"):
@@ -374,6 +379,12 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
+
+    # Chưa dùng /start → dismiss callback, không làm gì
+    if not ctx.user_data.get("activated"):
+        await q.answer()
+        return
+
     await q.answer()
 
     if q.data == "nhap_user":
