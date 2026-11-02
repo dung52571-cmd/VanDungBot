@@ -19,6 +19,7 @@ ADMIN_IDS  = [8374619289, 7662760183]
 ZALO       = "0364594036"
 SHOP_NAME  = "VĂN DŨNG GOLD"
 DAILY_LIMIT = 5
+REQUIRED_CHANNEL = "@gocnholocket"
 
 # ── Custom emoji (tg-emoji) ──────────────
 E_LOADING  = '<tg-emoji emoji-id="5350752364246606166">✍️</tg-emoji>'
@@ -258,12 +259,39 @@ async def safe_delete(msg):
     except Exception:
         pass
 
+async def is_member(bot, user_id: int) -> bool:
+    try:
+        member = await bot.get_chat_member(REQUIRED_CHANNEL, user_id)
+        return member.status in ("member", "administrator", "creator")
+    except Exception:
+        return False
+
 
 # ──────────────────────────────────────────
 # BOT HANDLERS
 # ──────────────────────────────────────────
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+
+    # Admin bypass kiểm tra group
+    if user_id not in ADMIN_IDS:
+        joined = await is_member(update.get_bot(), user_id)
+        if not joined:
+            kb = InlineKeyboardMarkup([
+                [InlineKeyboardButton("👉 Tham gia Nhóm chat", url="https://t.me/gocnholocket")],
+                [InlineKeyboardButton("✅ Đã Tham Gia", callback_data="check_join")],
+            ])
+            await update.message.reply_text(
+                f"🔴 <b>Bạn chưa tham gia kênh!</b>\n\n"
+                f"Để sử dụng bot, vui lòng:\n"
+                f"1️⃣ Tham gia kênh của chúng tôi\n"
+                f"2️⃣ Bấm nút <b>✅ Đã Tham Gia</b> để xác nhận",
+                parse_mode="HTML",
+                reply_markup=kb
+            )
+            return
+
     ctx.user_data["activated"] = True
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🏅 Nhập User Locket", callback_data="nhap_user")],
@@ -273,7 +301,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         ],
     ])
     await update.message.reply_text(
-        f"👑 <b>{SHOP_NAME}</b>\n\n"
+        f"🟢 <b>{SHOP_NAME}</b>\n\n"
         f"Chào mừng! Vui lòng chọn ngôn ngữ hoặc sử dụng menu bên dưới.\n\n"
         f"Tham gia nhóm chat: https://t.me/gocnholocket",
         parse_mode="HTML",
@@ -412,6 +440,30 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     elif q.data == "noop":
         pass  # nút 👍 trang trí, không làm gì
+
+    elif q.data == "check_join":
+        user_id = q.from_user.id
+        joined = await is_member(q.get_bot(), user_id)
+        if not joined:
+            await q.answer("❌ Bạn chưa tham gia nhóm!", show_alert=True)
+            return
+        # Đã tham gia → xoá message cũ, mở bot
+        await safe_delete(q.message)
+        ctx.user_data["activated"] = True
+        kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🏅 Nhập User Locket", callback_data="nhap_user")],
+            [
+                InlineKeyboardButton("🌐 Đổi Ngôn Ngữ", callback_data="ngonngu"),
+                InlineKeyboardButton("🆘 Hỗ Trợ", url=f"https://zalo.me/{ZALO}"),
+            ],
+        ])
+        await q.message.reply_text(
+            f"👑 <b>{SHOP_NAME}</b>\n\n"
+            f"Chào mừng! Vui lòng chọn ngôn ngữ hoặc sử dụng menu bên dưới.\n\n"
+            f"Tham gia nhóm chat: https://t.me/gocnholocket",
+            parse_mode="HTML",
+            reply_markup=kb
+        )
 
     elif q.data == "ngonngu":
         await q.message.reply_text(
