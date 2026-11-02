@@ -273,7 +273,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         ],
     ])
     await update.message.reply_text(
-        f"🟢 <b>{SHOP_NAME}</b>\n\n"
+        f"👑 <b>{SHOP_NAME}</b>\n\n"
         f"Chào mừng! Vui lòng chọn ngôn ngữ hoặc sử dụng menu bên dưới.\n\n"
         f"Tham gia nhóm chat: https://t.me/gocnholocket",
         parse_mode="HTML",
@@ -318,19 +318,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
     if not ctx.user_data.get("waiting_username"):
-        # Tin nhắn thường → hiện menu
-        kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🏅 Nhập User Locket", callback_data="nhap_user")],
-            [
-                InlineKeyboardButton("🌐 Đổi Ngôn Ngữ", callback_data="ngonngu"),
-                InlineKeyboardButton("🆘 Hỗ Trợ", url=f"https://zalo.me/{ZALO}"),
-            ],
-        ])
-        await update.message.reply_text(
-            f"🟢 <b>{SHOP_NAME}</b>\n\nVui lòng sử dụng menu bên dưới.",
-            parse_mode="HTML",
-            reply_markup=kb
-        )
+        # Không đang chờ username → im lặng hoàn toàn
         return
 
     # ── Đang chờ username ──────────────────
