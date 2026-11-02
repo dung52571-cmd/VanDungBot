@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """
 VĂN DŨNG GOLD - Telegram Bot
-Tự động kick Gold cho khách khi nhắn username
-v2: + /broadcast (admin thông báo tới tất cả user)
-    + Daily 6:00 sáng VN tự động chúc ngày mới (Asyncio native + lưu file users.json)
+v3: Tự động đồng bộ toàn bộ user cũ đã tham gia @gocnholocket qua MTProto (không cần đợi /start lại)
 """
 
 import asyncio, aiohttp, json, re, os
-import datetime as dt
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
@@ -25,7 +22,11 @@ SHOP_NAME        = "VĂN DŨNG GOLD"
 DAILY_LIMIT      = 5
 REQUIRED_CHANNEL = "@gocnholocket"
 VN_TZ            = ZoneInfo("Asia/Ho_Chi_Minh")
-USERS_FILE       = "users.json"
+USERS_FILE       = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.json")
+
+# Public Telegram Desktop API keys dùng để quét toàn bộ mem cũ trong @gocnholocket
+TG_API_ID        = 2040
+TG_API_HASH      = "b18441a1ff607e10a989891a5462e627"
 
 # ── Custom emoji (tg-emoji) ──────────────
 E_LOADING  = '<tg-emoji emoji-id="5350752364246606166">✍️</tg-emoji>'
@@ -58,25 +59,69 @@ TOKEN_CONFIG = {
 usage_data = {}
 
 def load_users() -> set[int]:
+    users = set(ADMIN_IDS)
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r", encoding="utf-8") as f:
-                return set(json.load(f))
-        except Exception:
-            pass
-    return set()
+                data = json.load(f)
+                if isinstance(data, list):
+                    users.update(int(x) for x in data if str(x).lstrip('-').isdigit())
+        except Exception as e:
+            print(f"[load_users] err={e}")
+    return users
 
-def save_user(uid: int):
-    known_users.add(uid)
+def flush_users():
     try:
         with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump(list(known_users), f)
-    except Exception:
-        pass
+            json.dump(sorted(list(known_users)), f, indent=2)
+    except Exception as e:
+        print(f"[flush_users] err={e}")
+
+def save_user(uid: int):
+    if not uid or uid < 0:
+        return
+    if uid not in known_users:
+        known_users.add(uid)
+        flush_users()
+
+def get_all_target_users() -> set[int]:
+    all_uids = set(known_users) | set(usage_data.keys()) | set(ADMIN_IDS)
+    if len(all_uids) != len(known_users):
+        known_users.update(all_uids)
+        flush_users()
+    return all_uids
 
 known_users: set[int] = load_users()
+flush_users()
+
+async def sync_past_channel_users() -> int:
+    """Dùng MTProto thông qua chính BOT_TOKEN để lấy toàn bộ user đã từng vào @gocnholocket."""
+    try:
+        from telethon import TelegramClient
+        from telethon.sessions import MemorySession
+    except ImportError:
+        print("[!] Chưa cài telethon (chạy: pip install telethon để tự động hút toàn bộ user cũ)")
+        return 0
+
+    added = 0
+    client = TelegramClient(MemorySession(), TG_API_ID, TG_API_HASH)
+    try:
+        await client.start(bot_token=BOT_TOKEN)
+        async for user in client.iter_participants(REQUIRED_CHANNEL, aggressive=True):
+            if not getattr(user, "bot", False) and not getattr(user, "deleted", False):
+                if user.id not in known_users:
+                    known_users.add(user.id)
+                    added += 1
+        flush_users()
+        print(f"[*] [Sync] Đã hút thêm {added} user cũ từ {REQUIRED_CHANNEL} (Tổng: {len(known_users)} users)")
+    except Exception as e:
+        print(f"[!] [Sync] Lỗi quét thành viên từ {REQUIRED_CHANNEL}: {e}")
+    finally:
+        await client.disconnect()
+    return added
 
 def check_limit(user_id: int) -> tuple:
+    save_user(user_id)
     if user_id in ADMIN_IDS:
         return True, 999
     today = datetime.now(VN_TZ).strftime("%Y-%m-%d")
@@ -87,6 +132,7 @@ def check_limit(user_id: int) -> tuple:
     return remaining > 0, remaining
 
 def add_usage(user_id: int):
+    save_user(user_id)
     if user_id in ADMIN_IDS:
         return
     today = datetime.now(VN_TZ).strftime("%Y-%m-%d")
@@ -284,10 +330,8 @@ async def is_member(bot, user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(REQUIRED_CHANNEL, user_id)
         result = member.status in ("member", "administrator", "creator")
-        print(f"[check_member] uid={user_id} status={member.status} → {result}")
         return result
-    except Exception as e:
-        print(f"[check_member] uid={user_id} exception={e} → BLOCK")
+    except Exception:
         return False
 
 
@@ -296,24 +340,23 @@ async def is_member(bot, user_id: int) -> bool:
 # ──────────────────────────────────────────
 
 async def send_morning_greeting(bot):
-    """Gửi chúc ngày mới tới toàn bộ user đã lưu."""
+    await sync_past_channel_users()
     msg = (
         "📣 <b>Chúc anh em ngày mới vui vẻ!</b>\n\n"
         "Đừng quên tôi nhé anh em. "
     )
+    targets = get_all_target_users()
     sent = failed = 0
-    for uid in list(known_users):
+    for uid in list(targets):
         try:
             await bot.send_message(uid, msg, parse_mode="HTML")
             sent += 1
             await asyncio.sleep(0.05)
-        except Exception as e:
-            print(f"[daily_morning] uid={uid} err={e}")
+        except Exception:
             failed += 1
-    print(f"[daily_morning] sent={sent} failed={failed} total_users={len(known_users)}")
+    print(f"[daily_morning] sent={sent} failed={failed} total_users={len(targets)}")
 
 async def morning_scheduler_loop(bot):
-    """Vòng lặp tự động canh đúng 06:00:00 giờ VN mỗi ngày để gửi tin."""
     while True:
         now = datetime.now(VN_TZ)
         target = now.replace(hour=6, minute=0, second=0, microsecond=0)
@@ -326,6 +369,7 @@ async def morning_scheduler_loop(bot):
         await asyncio.sleep(5)
 
 async def post_init(app: Application):
+    await sync_past_channel_users()
     asyncio.create_task(morning_scheduler_loop(app.bot))
 
 
@@ -335,6 +379,7 @@ async def post_init(app: Application):
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    save_user(user_id)
 
     if user_id not in ADMIN_IDS:
         joined = await is_member(update.get_bot(), user_id)
@@ -353,7 +398,6 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-    save_user(user_id)
     ctx.user_data["activated"] = True
 
     kb = InlineKeyboardMarkup([
@@ -373,19 +417,33 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 # ──────────────────────────────────────────
-# ADMIN: /broadcast  /kick  /stats  /testmorning
+# ADMIN: /sync  /broadcast  /kick  /stats  /testmorning
 # ──────────────────────────────────────────
 
-async def cmd_testmorning(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Test gửi chúc buổi sáng ngay lập tức (Chỉ Admin)."""
+async def cmd_sync(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    save_user(update.effective_user.id)
     if update.effective_user.id not in ADMIN_IDS:
         return
-    await update.message.reply_text("⏳ Đang chạy thử gửi chúc buổi sáng...")
+    m = await update.message.reply_text("⏳ Đang quét toàn bộ user cũ từ kênh @gocnholocket...")
+    added = await sync_past_channel_users()
+    await safe_delete(m)
+    await update.message.reply_text(
+        f"✅ <b>Đồng bộ hoàn tất!</b>\n"
+        f"➕ Mới quét thêm: <b>{added}</b> user\n"
+        f"👥 Tổng danh sách hiện tại: <b>{len(get_all_target_users())}</b> user",
+        parse_mode="HTML"
+    )
+
+async def cmd_testmorning(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    save_user(update.effective_user.id)
+    if update.effective_user.id not in ADMIN_IDS:
+        return
+    await update.message.reply_text("⏳ Đang đồng bộ user cũ và gửi chúc buổi sáng...")
     await send_morning_greeting(ctx.bot)
     await update.message.reply_text("✅ Đã chạy xong chúc buổi sáng!")
 
-
 async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    save_user(update.effective_user.id)
     if update.effective_user.id not in ADMIN_IDS:
         return
 
@@ -393,42 +451,39 @@ async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not text:
         await update.message.reply_text(
             "📢 <b>Cách dùng:</b>\n"
-            "<code>/broadcast nội dung thông báo</code>\n\n"
-            "Hỗ trợ HTML, ví dụ:\n"
-            "<code>/broadcast 📣 <b>Ngày mới vui vẻ!</b> Rải link kéo mem giúp ad anh em ơi!!</code>",
+            "<code>/broadcast nội dung thông báo</code>",
             parse_mode="HTML"
         )
         return
 
-    if not known_users:
-        await update.message.reply_text("⚠️ Chưa có user nào đã /start.")
-        return
+    # Tự động quét toàn bộ user cũ trong kênh trước khi bắn broadcast
+    await sync_past_channel_users()
+    targets = get_all_target_users()
 
     status_msg = await update.message.reply_text(
-        f"📤 Đang gửi tới <b>{len(known_users)}</b> user...", parse_mode="HTML"
+        f"📤 Đang gửi tới <b>{len(targets)}</b> user...", parse_mode="HTML"
     )
 
     sent = failed = 0
-    for uid in list(known_users):
+    for uid in list(targets):
         try:
             await ctx.bot.send_message(uid, text, parse_mode="HTML")
             sent += 1
             await asyncio.sleep(0.05)
-        except Exception as e:
-            print(f"[broadcast] uid={uid} err={e}")
+        except Exception:
             failed += 1
 
     await safe_delete(status_msg)
     await update.message.reply_text(
         f"✅ <b>Broadcast hoàn tất!</b>\n\n"
-        f"📨 Gửi thành công: <b>{sent}</b>\n"
-        f"❌ Thất bại: <b>{failed}</b>\n"
-        f"👥 Tổng user: <b>{len(known_users)}</b>",
+        f"📨 Gửi thành công (đã từng /start bot): <b>{sent}</b>\n"
+        f"❌ Bỏ qua (chưa /start hoặc chặn bot): <b>{failed}</b>\n"
+        f"👥 Tổng ID đã quét: <b>{len(targets)}</b>",
         parse_mode="HTML"
     )
 
-
 async def cmd_kick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    save_user(update.effective_user.id)
     if update.effective_user.id not in ADMIN_IDS:
         return
     if not ctx.args:
@@ -459,29 +514,34 @@ async def cmd_kick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"{E_ERROR} Thất bại: {result}", parse_mode="HTML"
         )
 
-
 async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    save_user(update.effective_user.id)
     if update.effective_user.id not in ADMIN_IDS:
         return
+    targets = get_all_target_users()
     await update.message.reply_text(
         f"📊 <b>Thống kê Bot</b>\n\n"
-        f"👥 Tổng user đã /start: <b>{len(known_users)}</b>\n"
+        f"👥 Tổng user trong danh sách: <b>{len(targets)}</b>\n"
         f"📅 Giờ server (VN): <b>{datetime.now(VN_TZ).strftime('%H:%M:%S %d/%m/%Y')}</b>",
         parse_mode="HTML"
     )
 
 
 # ──────────────────────────────────────────
-# MESSAGE HANDLER
+# MESSAGE & CALLBACK HANDLERS
 # ──────────────────────────────────────────
 
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_user:
+        return
     user_id = update.effective_user.id
     save_user(user_id)
 
     if not ctx.user_data.get("activated"):
         ctx.user_data["activated"] = True
 
+    if not update.message or not update.message.text:
+        return
     text = update.message.text.strip()
 
     if not ctx.user_data.get("waiting_username"):
@@ -516,9 +576,7 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     gold_info = await check_gold(uid)
     await safe_delete(m2)
 
-    allowed, remaining = check_limit(user_id)
-    used = get_used(user_id)
-
+    allowed, _ = check_limit(user_id)
     if not allowed:
         await update.message.reply_text(
             f"{E_LIMIT} <b>Đã hết lượt hôm nay!</b>\n\n"
@@ -548,11 +606,6 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML",
         reply_markup=kb
     )
-
-
-# ──────────────────────────────────────────
-# CALLBACK HANDLER
-# ──────────────────────────────────────────
 
 async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
@@ -725,19 +778,17 @@ def main():
         .build()
     )
 
-    # ── Handlers ──────────────────────────
     app.add_handler(CommandHandler("start",       cmd_start))
+    app.add_handler(CommandHandler("sync",        cmd_sync))
     app.add_handler(CommandHandler("kick",        cmd_kick))
     app.add_handler(CommandHandler("broadcast",   cmd_broadcast))
     app.add_handler(CommandHandler("stats",       cmd_stats))
     app.add_handler(CommandHandler("testmorning", cmd_testmorning))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(MessageHandler(filters.REPLY & filters.TEXT,    handle_message))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(handle_callback))
 
-    print(f"[*] Lịch chúc sáng đã đặt: 06:00 giờ Việt Nam mỗi ngày (Asyncio loop)")
     print(f"[*] Bot đang chạy. Nhấn Ctrl+C để dừng.")
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(drop_pending_updates=False)
 
 
 if __name__ == "__main__":
