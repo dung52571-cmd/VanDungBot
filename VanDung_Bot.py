@@ -183,13 +183,12 @@ async def check_gold(uid: str) -> dict:
             if expires_raw:
                 try:
                     exp_dt = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
-                    exp_str = exp_dt.strftime("%d/%m/%Y")
                     if exp_dt > datetime.now(timezone.utc):
-                        return {"has_gold": True, "expires_date": exp_str, "product_id": product_id,
-                                "status": f"Active Gold (hết hạn {exp_str})"}
+                        return {"has_gold": True, "expires_date": expires_raw, "product_id": product_id,
+                                "status": f"Active Gold"}
                     else:
-                        return {"has_gold": False, "expires_date": exp_str, "product_id": product_id,
-                                "status": f"Expired ({exp_str})"}
+                        return {"has_gold": False, "expires_date": expires_raw, "product_id": product_id,
+                                "status": f"Expired"}
                 except ValueError:
                     pass
 
@@ -198,10 +197,9 @@ async def check_gold(uid: str) -> dict:
             if expires_raw:
                 try:
                     exp_dt = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
-                    exp_str = exp_dt.strftime("%d/%m/%Y")
                     if exp_dt > datetime.now(timezone.utc):
-                        return {"has_gold": True, "expires_date": exp_str, "product_id": prod,
-                                "status": f"Active Gold (hết hạn {exp_str})"}
+                        return {"has_gold": True, "expires_date": expires_raw, "product_id": prod,
+                                "status": f"Active Gold"}
                 except ValueError:
                     pass
 
@@ -385,23 +383,22 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     # Bước 4: Hiển thị user info + nút kích hoạt
     if gold_info["has_gold"]:
-        status_text = f"🏅 Gold ✅  ({gold_info['status']})"
-        note = f"\n\n⚠️ Tài khoản này <b>đã có Gold</b>. Bạn vẫn có thể kích hoạt lại để gia hạn."
+        # Lấy raw expires để hiển thị đúng format ISO như ảnh
+        raw_exp = gold_info.get("expires_date", "")
+        status_text = f"✅ Gold Đã Active (Hết hạn: {raw_exp})"
     else:
-        status_text = f"🆓 Free — {gold_info['status']}"
-        note = ""
+        status_text = "❌ Free (Chưa Active)"
 
-    kb = InlineKeyboardMarkup([[
-        InlineKeyboardButton("🚀 KÍCH HOẠT NGAY", callback_data=f"kick_{uid}_{username}")
-    ]])
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("👍", callback_data="noop")],
+        [InlineKeyboardButton("🚀 KÍCH HOẠT NGAY", callback_data=f"kick_{uid}_{username}")]
+    ])
 
     await update.message.reply_text(
-        f"{E_USER} <b>User Information</b>\n\n"
-        f"{E_ID} <code>{uid}</code>\n"
-        f"{E_TAG} @{username}\n"
-        f"{E_STAT} {status_text}\n"
-        f"{E_CALENDAR} Đã dùng hôm nay: <b>{used}/{DAILY_LIMIT}</b>"
-        f"{note}",
+        f"👤 <b>User Information</b>\n"
+        f"🪪: <code>{uid}</code>\n"
+        f"🏷️: {username}\n"
+        f"📊 <b>Status:</b> {status_text}",
         parse_mode="HTML",
         reply_markup=kb
     )
@@ -424,6 +421,9 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML",
             reply_markup=ForceReply(selective=True, input_field_placeholder="Username hoặc link locket.cam/...")
         )
+
+    elif q.data == "noop":
+        pass  # nút 👍 trang trí, không làm gì
 
     elif q.data == "ngonngu":
         await q.message.reply_text(
