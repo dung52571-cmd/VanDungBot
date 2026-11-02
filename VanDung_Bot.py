@@ -395,7 +395,7 @@ async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "📢 <b>Cách dùng:</b>\n"
             "<code>/broadcast nội dung thông báo</code>\n\n"
             "Hỗ trợ HTML, ví dụ:\n"
-            "<code>/broadcast 📣 <b>Ngày mới vui vẻ!</b> Rải link nhé anh em 🎁</code>",
+            "<code>/broadcast 📣 <b>Ngày mới vui vẻ!</b> Rải link kéo mem giúp ad anh em ơi!!</code>",
             parse_mode="HTML"
         )
         return
