@@ -301,7 +301,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         ],
     ])
     await update.message.reply_text(
-        f"🟢 <b>{SHOP_NAME}</b>\n\n"
+        f"👑 <b>{SHOP_NAME}</b>\n\n"
         f"Chào mừng! Vui lòng chọn ngôn ngữ hoặc sử dụng menu bên dưới.\n\n"
         f"Tham gia nhóm chat: https://t.me/gocnholocket",
         parse_mode="HTML",
