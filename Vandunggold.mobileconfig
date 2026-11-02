@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>PayloadDisplayName</key>
-  <string>Locket Gold - Giữ Gold đến 14/08/2027</string>
+  <string>Locket Gold - Văn Dũng Gold</string>
   <key>PayloadDescription</key>
   <string>DNS giữ Gold sau khi kick bằng tool mới</string>
   <key>PayloadIdentifier</key>
