@@ -3,12 +3,12 @@
 VĂN DŨNG GOLD - Telegram Bot
 Tự động kick Gold cho khách khi nhắn username
 v2: + /broadcast (admin thông báo tới tất cả user)
-    + Daily 6:00 sáng VN tự động chúc ngày mới
+    + Daily 6:00 sáng VN tự động chúc ngày mới (Asyncio native + lưu file users.json)
 """
 
 import asyncio, aiohttp, json, re, os
 import datetime as dt
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import (Application, CommandHandler, MessageHandler,
@@ -18,13 +18,14 @@ from telegram.ext import (Application, CommandHandler, MessageHandler,
 # CẤU HÌNH
 # ──────────────────────────────────────────
 
-BOT_TOKEN  = "8868803975:AAG5oLI2ow5xjr4JnkdE41NLof_CBChsVYk"
-ADMIN_IDS  = [8374619289, 7662760183]
-ZALO       = "0364594036"
-SHOP_NAME  = "VĂN DŨNG GOLD"
-DAILY_LIMIT = 5
+BOT_TOKEN        = "8868803975:AAG5oLI2ow5xjr4JnkdE41NLof_CBChsVYk"
+ADMIN_IDS        = [8374619289, 7662760183]
+ZALO             = "0364594036"
+SHOP_NAME        = "VĂN DŨNG GOLD"
+DAILY_LIMIT      = 5
 REQUIRED_CHANNEL = "@gocnholocket"
-VN_TZ      = ZoneInfo("Asia/Ho_Chi_Minh")
+VN_TZ            = ZoneInfo("Asia/Ho_Chi_Minh")
+USERS_FILE       = "users.json"
 
 # ── Custom emoji (tg-emoji) ──────────────
 E_LOADING  = '<tg-emoji emoji-id="5350752364246606166">✍️</tg-emoji>'
@@ -53,14 +54,32 @@ TOKEN_CONFIG = {
     "hash_headers": "X-Is-Sandbox:sha256:fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
 }
 
-# ── Usage tracking ──────────────────────────────
-usage_data   = {}
-known_users: set[int] = set()   # ← populate ở cmd_start & check_join
+# ── Usage & Persistent Users ─────────────────────
+usage_data = {}
+
+def load_users() -> set[int]:
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r", encoding="utf-8") as f:
+                return set(json.load(f))
+        except Exception:
+            pass
+    return set()
+
+def save_user(uid: int):
+    known_users.add(uid)
+    try:
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(list(known_users), f)
+    except Exception:
+        pass
+
+known_users: set[int] = load_users()
 
 def check_limit(user_id: int) -> tuple:
     if user_id in ADMIN_IDS:
         return True, 999
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(VN_TZ).strftime("%Y-%m-%d")
     if user_id not in usage_data or usage_data[user_id]["date"] != today:
         usage_data[user_id] = {"date": today, "count": 0}
     used = usage_data[user_id]["count"]
@@ -70,7 +89,7 @@ def check_limit(user_id: int) -> tuple:
 def add_usage(user_id: int):
     if user_id in ADMIN_IDS:
         return
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(VN_TZ).strftime("%Y-%m-%d")
     if user_id not in usage_data or usage_data[user_id]["date"] != today:
         usage_data[user_id] = {"date": today, "count": 0}
     usage_data[user_id]["count"] += 1
@@ -78,7 +97,7 @@ def add_usage(user_id: int):
 def get_used(user_id: int) -> int:
     if user_id in ADMIN_IDS:
         return 0
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(VN_TZ).strftime("%Y-%m-%d")
     if user_id in usage_data and usage_data[user_id]["date"] == today:
         return usage_data[user_id]["count"]
     return 0
@@ -115,7 +134,6 @@ HEADERS = {
     'X-RevenueCat-ETag': ''
 }
 
-
 # ──────────────────────────────────────────
 # REVENUECAT LOGIC
 # ──────────────────────────────────────────
@@ -132,16 +150,16 @@ async def resolve_uid(username: str) -> str | None:
     headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)", "Accept": "text/html"}
     def extract(text):
         if not text: return None
-        import re as _re
-        m = _re.search(r'/invites/([A-Za-z0-9]{28})', text)
+        m = re.search(r'/invites/([A-Za-z0-9]{28})', text)
         if m: return m.group(1)
-        lp = _re.search(r'link=([^ "\'>]+)', text)
+        lp = re.search(r'link=([^ "\'>]+)', text)
         if lp:
             try:
                 d = lp.group(1).replace('%3A', ':').replace('%2F', '/')
-                dm = _re.search(r'/invites/([A-Za-z0-9]{28})', d)
+                dm = re.search(r'/invites/([A-Za-z0-9]{28})', d)
                 if dm: return dm.group(1)
-            except: pass
+            except Exception:
+                pass
         return None
     try:
         async with aiohttp.ClientSession() as s:
@@ -191,11 +209,9 @@ async def check_gold(uid: str) -> dict:
                 try:
                     exp_dt = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
                     if exp_dt > datetime.now(timezone.utc):
-                        return {"has_gold": True, "expires_date": expires_raw, "product_id": product_id,
-                                "status": "Active Gold"}
+                        return {"has_gold": True, "expires_date": expires_raw, "product_id": product_id, "status": "Active Gold"}
                     else:
-                        return {"has_gold": False, "expires_date": expires_raw, "product_id": product_id,
-                                "status": "Expired"}
+                        return {"has_gold": False, "expires_date": expires_raw, "product_id": product_id, "status": "Expired"}
                 except ValueError:
                     pass
 
@@ -205,8 +221,7 @@ async def check_gold(uid: str) -> dict:
                 try:
                     exp_dt = datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
                     if exp_dt > datetime.now(timezone.utc):
-                        return {"has_gold": True, "expires_date": expires_raw, "product_id": prod,
-                                "status": "Active Gold"}
+                        return {"has_gold": True, "expires_date": expires_raw, "product_id": prod, "status": "Active Gold"}
                 except ValueError:
                     pass
 
@@ -277,23 +292,41 @@ async def is_member(bot, user_id: int) -> bool:
 
 
 # ──────────────────────────────────────────
-# SCHEDULED JOB — 6:00 sáng mỗi ngày (VN)
+# SCHEDULED LOOP — 6:00 sáng mỗi ngày (VN)
 # ──────────────────────────────────────────
 
-async def daily_morning(ctx: ContextTypes.DEFAULT_TYPE):
-    """Gửi chúc ngày mới tới toàn bộ user đã /start."""
+async def send_morning_greeting(bot):
+    """Gửi chúc ngày mới tới toàn bộ user đã lưu."""
     msg = (
-        "📣 <b>Ngày mới vui vẻ!</b>\n\n"
-        "Nhớ là để ý tôi nhiều vào nhé. "
+        "📣 <b>Chúc anh em ngày mới vui vẻ!</b>\n\n"
+        "Đừng quên tôi nhé anh em. "
     )
     sent = failed = 0
     for uid in list(known_users):
         try:
-            await ctx.bot.send_message(uid, msg, parse_mode="HTML")
+            await bot.send_message(uid, msg, parse_mode="HTML")
             sent += 1
-        except Exception:
+            await asyncio.sleep(0.05)
+        except Exception as e:
+            print(f"[daily_morning] uid={uid} err={e}")
             failed += 1
     print(f"[daily_morning] sent={sent} failed={failed} total_users={len(known_users)}")
+
+async def morning_scheduler_loop(bot):
+    """Vòng lặp tự động canh đúng 06:00:00 giờ VN mỗi ngày để gửi tin."""
+    while True:
+        now = datetime.now(VN_TZ)
+        target = now.replace(hour=6, minute=0, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+        print(f"[*] [Scheduler] Chờ {int(wait_seconds)}s tới 06:00 sáng ({target.strftime('%d/%m/%Y %H:%M:%S')})")
+        await asyncio.sleep(wait_seconds)
+        await send_morning_greeting(bot)
+        await asyncio.sleep(5)
+
+async def post_init(app: Application):
+    asyncio.create_task(morning_scheduler_loop(app.bot))
 
 
 # ──────────────────────────────────────────
@@ -320,8 +353,7 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-    # ← ghi nhớ user đã /start thành công
-    known_users.add(user_id)
+    save_user(user_id)
     ctx.user_data["activated"] = True
 
     kb = InlineKeyboardMarkup([
@@ -341,15 +373,19 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 # ──────────────────────────────────────────
-# ADMIN: /broadcast  /kick  /stats
+# ADMIN: /broadcast  /kick  /stats  /testmorning
 # ──────────────────────────────────────────
 
+async def cmd_testmorning(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Test gửi chúc buổi sáng ngay lập tức (Chỉ Admin)."""
+    if update.effective_user.id not in ADMIN_IDS:
+        return
+    await update.message.reply_text("⏳ Đang chạy thử gửi chúc buổi sáng...")
+    await send_morning_greeting(ctx.bot)
+    await update.message.reply_text("✅ Đã chạy xong chúc buổi sáng!")
+
+
 async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """
-    /broadcast <nội dung>
-    Gửi thông báo tới toàn bộ user đã /start.
-    Hỗ trợ HTML. Chỉ admin dùng được.
-    """
     if update.effective_user.id not in ADMIN_IDS:
         return
 
@@ -359,7 +395,7 @@ async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "📢 <b>Cách dùng:</b>\n"
             "<code>/broadcast nội dung thông báo</code>\n\n"
             "Hỗ trợ HTML, ví dụ:\n"
-            "<code>/broadcast 📣 &lt;b&gt;Ngày mới vui vẻ!&lt;/b&gt; Rải link nhé anh em 🎁</code>",
+            "<code>/broadcast 📣 <b>Ngày mới vui vẻ!</b> Rải link nhé anh em 🎁</code>",
             parse_mode="HTML"
         )
         return
@@ -377,7 +413,7 @@ async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         try:
             await ctx.bot.send_message(uid, text, parse_mode="HTML")
             sent += 1
-            await asyncio.sleep(0.05)   # tránh rate-limit Telegram
+            await asyncio.sleep(0.05)
         except Exception as e:
             print(f"[broadcast] uid={uid} err={e}")
             failed += 1
@@ -425,10 +461,6 @@ async def cmd_kick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """
-    /stats — Xem số lượng user đang có trong danh sách broadcast.
-    Chỉ admin.
-    """
     if update.effective_user.id not in ADMIN_IDS:
         return
     await update.message.reply_text(
@@ -444,8 +476,11 @@ async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ──────────────────────────────────────────
 
 async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    save_user(user_id)
+
     if not ctx.user_data.get("activated"):
-        return
+        ctx.user_data["activated"] = True
 
     text = update.message.text.strip()
 
@@ -456,8 +491,6 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     username = text.lstrip('@')
     if 'locket.cam/' in username:
         username = username.split('locket.cam/')[-1].split('?')[0]
-
-    user_id = update.effective_user.id
 
     m1 = await update.message.reply_text(
         f"{E_LOADING} <b>Đang phân giải UID...</b>\n"
@@ -523,10 +556,11 @@ async def handle_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
+    user_id = q.from_user.id
+    save_user(user_id)
 
-    if not ctx.user_data.get("activated"):
-        await q.answer()
-        return
+    if not ctx.user_data.get("activated") and q.data != "check_join":
+        ctx.user_data["activated"] = True
 
     await q.answer()
 
@@ -543,14 +577,12 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         pass
 
     elif q.data == "check_join":
-        user_id = q.from_user.id
         joined = await is_member(q.get_bot(), user_id)
         if not joined:
             await q.answer("❌ Bạn chưa tham gia nhóm!", show_alert=True)
             return
         await safe_delete(q.message)
-        # ← ghi nhớ user sau khi xác nhận tham gia
-        known_users.add(user_id)
+        save_user(user_id)
         ctx.user_data["activated"] = True
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("🏅 Nhập User Locket", callback_data="nhap_user")],
@@ -577,7 +609,6 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parts    = q.data.split("_", 2)
         uid      = parts[1]
         username = parts[2] if len(parts) > 2 else "unknown"
-        user_id  = q.from_user.id
 
         await q.message.edit_reply_markup(reply_markup=None)
 
@@ -690,23 +721,21 @@ def main():
     app = (
         Application.builder()
         .token(BOT_TOKEN)
+        .post_init(post_init)
         .build()
     )
 
     # ── Handlers ──────────────────────────
-    app.add_handler(CommandHandler("start",     cmd_start))
-    app.add_handler(CommandHandler("kick",      cmd_kick))
-    app.add_handler(CommandHandler("broadcast", cmd_broadcast))
-    app.add_handler(CommandHandler("stats",     cmd_stats))
+    app.add_handler(CommandHandler("start",       cmd_start))
+    app.add_handler(CommandHandler("kick",        cmd_kick))
+    app.add_handler(CommandHandler("broadcast",   cmd_broadcast))
+    app.add_handler(CommandHandler("stats",       cmd_stats))
+    app.add_handler(CommandHandler("testmorning", cmd_testmorning))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.REPLY & filters.TEXT,    handle_message))
     app.add_handler(CallbackQueryHandler(handle_callback))
 
-    # ── Scheduled job: 6:00 sáng VN mỗi ngày ──
-    job_time = dt.time(hour=6, minute=0, second=0, tzinfo=VN_TZ)
-    app.job_queue.run_daily(daily_morning, time=job_time)
-    print(f"[*] Lịch chúc sáng đã đặt: 06:00 giờ Việt Nam mỗi ngày")
-
+    print(f"[*] Lịch chúc sáng đã đặt: 06:00 giờ Việt Nam mỗi ngày (Asyncio loop)")
     print(f"[*] Bot đang chạy. Nhấn Ctrl+C để dừng.")
     app.run_polling(drop_pending_updates=True)
 
