@@ -553,7 +553,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 f"2️⃣ Cài <b>DNS ngay</b> để không bị mất Gold:\n\n"
                 f"{E_IOS} <b>iOS:</b> Mở file bên dưới bằng Safari → Cho phép → Cài đặt\n"
                 f"⚠️ Sau đó: Cài đặt → Cài đặt chung → Giới thiệu → "
-                f"Cài đặt tin cậy chứng chỉ → Bật <b>LocketGold CA</b>\n\n"
+                f"Cài đặt tin cậy chứng chỉ → Bật <b>My Private CA</b>\n\n"
                 f"{E_ANDROID} <b>Android:</b> <code>782aa4.dns.nextdns.io</code>\n"
                 f"(Cài đặt → Mạng → Private DNS)\n\n"
                 f"{E_TIP} Bắt buộc cài DNS để không bị mất Gold!\n\n"
@@ -570,7 +570,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                             f"{E_IOS} File DNS cho iOS\n"
                             f"1. Mở bằng Safari → Cho phép → Cài đặt\n"
                             f"2. Cài đặt → Cài đặt chung → Giới thiệu → "
-                            f"Cài đặt tin cậy chứng chỉ → Bật LocketGold CA\n"
+                            f"Cài đặt tin cậy chứng chỉ → My Private CA\n"
                             f"⚠️ Bắt buộc bật chứng chỉ tin cậy để giữ Gold!"
                         )
                     )
