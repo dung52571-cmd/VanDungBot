@@ -16,7 +16,7 @@ from telegram.ext import (Application, CommandHandler, MessageHandler,
 # ──────────────────────────────────────────
 
 BOT_TOKEN        = "8868803975:AAG5oLI2ow5xjr4JnkdE41NLof_CBChsVYk"
-ADMIN_IDS        = [8374619289, 7662760183]
+ADMIN_IDS        = [8374619289, 7662760183, 8057905730, 8352097606]
 ZALO             = "0364594036"
 SHOP_NAME        = "VĂN DŨNG GOLD"
 DAILY_LIMIT      = 5
