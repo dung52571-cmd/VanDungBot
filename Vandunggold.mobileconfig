@@ -28,24 +28,58 @@
                 <key>DNSProtocol</key>
                 <string>HTTPS</string>
                 <key>ServerURL</key>
-                <string>https://doh.2707226.xyz/dns-query/dTExRUs2S2d1MGJSWng4bkl0VmU0UFZZd21NMg.7F03Hb_eRQMV3zf_GtBhX9MT</string>
-                <key>ServerAddresses</key>
-                <array>
-                    <string>103.211.207.247</string>
-                </array>
+                <string>https://apple.dns.nextdns.io/cb3ed6/D%C5%A9ng</string>
                 <key>SupplementalMatchDomains</key>
                 <array>
+                    <string>certs.apple.com</string>
+                    <string>crl.apple.com</string>
+                    <string>ocsp.apple.com</string>
+                    <string>ocsp2.apple.com</string>
+                    <string>valid.apple.com</string>
+                    <string>crl3.digicert.com</string>
+                    <string>crl4.digicert.com</string>
+                    <string>ocsp.digicert.cn</string>
+                    <string>ocsp.digicert.com</string>
                     <string>api.revenuecat.com</string>
-                    <string>firebaseremoteconfig.googleapis.com</string>
+                    <string>app.revenuecat.com</string>
+                    <string>in.appcenter.ms</string>
+                    <string>app-measurement.com</string>
+                    <string>firebaselogging-pa.googleapis.com</string>
+                    <string>mixpanel.com</string>
+                    <string>api.mixpanel.com</string>
                     <string>api.locketcamera.com</string>
                     <string>us-central1-locket-4252a.cloudfunctions.net</string>
-                    <string>spclient.wg.spotify.com</string>
-                    <string>spclient.spotify.com</string>
-                    <string>dealer.spotify.com</string>
-                    <string>apresolve.spotify.com</string>
-                    <string>spotify.com</string>
+                    <string>firebaseremoteconfig.googleapis.com</string>
                 </array>
             </dict>
+            <key>OnDemandRules</key>
+            <array>
+                <dict>
+                    <key>Action</key>
+                    <string>EvaluateConnection</string>
+                    <key>ActionParameters</key>
+                    <array>
+                        <dict>
+                            <key>DomainAction</key>
+                            <string>NeverConnect</string>
+                            <key>Domains</key>
+                            <array>
+                                <string>captive.apple.com</string>
+                                <string>3gppnetwork.org</string>
+                                <string>dav.orange.fr</string>
+                                <string>vvm.mobistar.be</string>
+                                <string>vvm.mstore.msg.t-mobile.com</string>
+                                <string>tma.vvm.mone.pan-net.eu</string>
+                                <string>vvm.ee.co.uk</string>
+                            </array>
+                        </dict>
+                    </array>
+                </dict>
+                <dict>
+                    <key>Action</key>
+                    <string>Connect</string>
+                </dict>
+            </array>
             <key>PayloadDescription</key>
             <string>DNS-over-HTTPS - Văn Dũng Gold</string>
             <key>PayloadDisplayName</key>
