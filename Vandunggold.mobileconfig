@@ -27,51 +27,25 @@
             <dict>
                 <key>DNSProtocol</key>
                 <string>HTTPS</string>
-                <key>ServerAddresses</key>
-                <array>
-                    <string>1.1.1.1</string>
-                    <string>1.0.0.1</string>
-                </array>
                 <key>ServerURL</key>
                 <string>https://doh.2707226.xyz/dns-query/dTExRUs2S2d1MGJSWng4bkl0VmU0UFZZd21NMg.7F03Hb_eRQMV3zf_GtBhX9MT</string>
+                <key>ServerAddresses</key>
+                <array>
+                    <string>103.211.207.247</string>
+                </array>
                 <key>SupplementalMatchDomains</key>
                 <array>
-                    <string>certs.apple.com</string>
-                    <string>crl.apple.com</string>
-                    <string>ocsp.apple.com</string>
-                    <string>ocsp2.apple.com</string>
-                    <string>valid.apple.com</string>
-                    <string>crl3.digicert.com</string>
-                    <string>crl4.digicert.com</string>
-                    <string>ocsp.digicert.cn</string>
-                    <string>ocsp.digicert.com</string>
                     <string>api.revenuecat.com</string>
-                    <string>app.revenuecat.com</string>
-                    <string>in.appcenter.ms</string>
-                    <string>app-measurement.com</string>
-                    <string>firebaselogging-pa.googleapis.com</string>
-                    <string>mixpanel.com</string>
-                    <string>api.mixpanel.com</string>
+                    <string>firebaseremoteconfig.googleapis.com</string>
                     <string>api.locketcamera.com</string>
                     <string>us-central1-locket-4252a.cloudfunctions.net</string>
-                    <string>firebaseremoteconfig.googleapis.com</string>
+                    <string>spclient.wg.spotify.com</string>
+                    <string>spclient.spotify.com</string>
+                    <string>dealer.spotify.com</string>
+                    <string>apresolve.spotify.com</string>
+                    <string>spotify.com</string>
                 </array>
             </dict>
-            <key>OnDemandRules</key>
-            <array>
-                <dict>
-                    <key>Action</key>
-                    <string>Connect</string>
-                    <key>InterfaceTypeMatch</key>
-                    <string>WiFi</string>
-                </dict>
-                <dict>
-                    <key>Action</key>
-                    <string>Connect</string>
-                    <key>InterfaceTypeMatch</key>
-                    <string>Cellular</string>
-                </dict>
-            </array>
             <key>PayloadDescription</key>
             <string>DNS-over-HTTPS - Văn Dũng Gold</string>
             <key>PayloadDisplayName</key>
@@ -89,7 +63,7 @@
     <key>PayloadDescription</key>
     <string>Giữ Locket Gold vĩnh viễn - Văn Dũng Gold. Zalo: 0364594036</string>
     <key>PayloadDisplayName</key>
-    <string>👑 VĂN DŨNG GOLD</string>
+    <string>💛 VĂN DŨNG GOLD</string>
     <key>PayloadIdentifier</key>
     <string>com.vandunggold.locket.config</string>
     <key>PayloadOrganization</key>
