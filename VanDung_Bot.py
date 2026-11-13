@@ -41,7 +41,7 @@ E_TAG      = '<tg-emoji emoji-id="5240228673738527951">🏷️</tg-emoji>'
 E_STAT     = '<tg-emoji emoji-id="4967519884192777037">📊</tg-emoji>'
 E_SHIELD   = '<tg-emoji emoji-id="5352888345972187597">🛡️</tg-emoji>'
 E_CALENDAR = '<tg-emoji emoji-id="5413879192267805083">📅</tg-emoji>'
-E_IOS      = '<tg-emoji emoji-id="5350556204500263431">🍏</tg-emoji>'
+E_IOS      = '<tg-emoji emoji-id="5350556204500263431">🍎</tg-emoji>'
 E_ANDROID  = '<tg-emoji emoji-id="5303145396254563405">🤖</tg-emoji>'
 
 # ──────────────────────────────────────────
@@ -343,7 +343,7 @@ async def send_morning_greeting(bot):
     await sync_past_channel_users()
     msg = (
         "📣 <b>Chúc anh em ngày mới vui vẻ!</b>\n\n"
-        "Đừng quên tôi nhé anh em. "
+        "Đừng quên sử dụng tôi nhé anh em. "
     )
     targets = get_all_target_users()
     sent = failed = 0
