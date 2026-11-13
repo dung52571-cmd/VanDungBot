@@ -736,7 +736,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 f"{E_ANDROID} <b>Android:</b> <code>782aa4.dns.nextdns.io</code>\n"
                 f"(Cài đặt → Mạng → Private DNS)\n\n"
                 f"{E_TIP} Bắt buộc cài DNS để không bị mất Gold!\n\n"
-                f"Tham gia nhóm chat: https://t.me/gocnholocket",
+                f"Tham gia nhóm chat: https://t.me/gocnholocket, Kênh thông báo: https://t.me/+rarr2dS-LPdkNjll",
                 parse_mode="HTML"
             )
 
