@@ -730,7 +730,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 f"{E_SHIELD} <b>HƯỚNG DẪN QUAN TRỌNG:</b>\n"
                 f"1️⃣ Vào App Locket kiểm tra đã có <b>Gold</b> chưa.\n"
                 f"2️⃣ Cài <b>DNS ngay</b> để không bị mất Gold:\n\n"
-                f"{E_IOS} <b>iOS:</b> Mở file bên dưới bằng Safari → Cho phép → Cài đặt\n"
+                f"{E_IOS} <b>iOS:</b> Lưu file bên dưới bằng tệp → Vào ứng dụng tệp nhấn vào file → Cài đặt, mở cài đặt và tiến hành cài đặt dns\n"
                 f"⚠️ Sau đó: Cài đặt → Cài đặt chung → Giới thiệu → "
                 f"Cài đặt tin cậy chứng chỉ → Bật <b>My Private CA</b>\n\n"
                 f"{E_ANDROID} <b>Android:</b> <code>782aa4.dns.nextdns.io</code>\n"
