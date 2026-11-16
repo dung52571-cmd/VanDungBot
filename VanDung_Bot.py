@@ -456,7 +456,6 @@ async def cmd_broadcast(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Tự động quét toàn bộ user cũ trong kênh trước khi bắn broadcast
     await sync_past_channel_users()
     targets = get_all_target_users()
 
@@ -730,9 +729,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 f"{E_SHIELD} <b>HƯỚNG DẪN QUAN TRỌNG:</b>\n"
                 f"1️⃣ Vào App Locket kiểm tra đã có <b>Gold</b> chưa.\n"
                 f"2️⃣ Cài <b>DNS ngay</b> để không bị mất Gold:\n\n"
-                f"{E_IOS} <b>iOS:</b> Lưu file bên dưới bằng tệp → Vào ứng dụng tệp nhấn vào file → Cài đặt, mở cài đặt và tiến hành cài đặt dns\n"
-                f"⚠️ Sau đó: Cài đặt → Cài đặt chung → Giới thiệu → "
-                f"Cài đặt tin cậy chứng chỉ → Bật <b>My Private CA</b>\n\n"
+                f"{E_IOS} <b>iOS:</b> Lưu file bên dưới bằng tệp → Vào ứng dụng tệp nhấn vào file → Cài đặt, mở cài đặt và tiến hành cài đặt dns\n\n"
                 f"{E_ANDROID} <b>Android:</b> <code>782aa4.dns.nextdns.io</code>\n"
                 f"(Cài đặt → Mạng → Private DNS)\n\n"
                 f"{E_TIP} Bắt buộc cài DNS để không bị mất Gold!\n\n"
@@ -748,9 +745,7 @@ async def handle_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                         caption=(
                             f"{E_IOS} File DNS cho iOS\n"
                             f"1. Mở bằng Safari → Cho phép → Cài đặt\n"
-                            f"2. Cài đặt → Cài đặt chung → Giới thiệu → "
-                            f"Cài đặt tin cậy chứng chỉ → Bật My Private CA\n"
-                            f"⚠️ Bắt buộc bật chứng chỉ tin cậy để giữ Gold!"
+                            f"⚠️ Bắt buộc cài DNS để giữ Gold!"
                         )
                     )
             except FileNotFoundError:
