@@ -10,7 +10,18 @@ from zoneinfo import ZoneInfo
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from telegram.ext import (Application, CommandHandler, MessageHandler,
                            CallbackQueryHandler, filters, ContextTypes)
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, format, *args):
+        pass
+
+threading.Thread(target=lambda: HTTPServer(("0.0.0.0", 8080), Handler).serve_forever(), daemon=True).start()
 # ──────────────────────────────────────────
 # CẤU HÌNH
 # ──────────────────────────────────────────
