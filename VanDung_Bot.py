@@ -26,7 +26,7 @@ threading.Thread(target=lambda: HTTPServer(("0.0.0.0", 8080), Handler).serve_for
 # CẤU HÌNH
 # ──────────────────────────────────────────
 
-BOT_TOKEN        = "8868803975:AAG5oLI2ow5xjr4JnkdE41NLof_CBChsVYk"
+BOT_TOKEN        = "8868803975:AAEDPHA2wxj3ixsW0qwVSwHc5DLuVwQMm_Y"
 ADMIN_IDS        = [8374619289, 7662760183, 8057905730, 8352097606, 7532566619]
 ZALO             = "0364594036"
 SHOP_NAME        = "VĂN DŨNG GOLD"
